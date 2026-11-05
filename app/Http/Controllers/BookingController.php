@@ -6,8 +6,8 @@ use App\Models\Booking;
 use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\StoreBookingRequest;
 
 class BookingController extends Controller
 {
@@ -18,7 +18,7 @@ class BookingController extends Controller
             ->paginate(20);
     }
 
-    public function store(Request $request)
+    public function store(StoreBookingRequest $request)
     {
         $conflict = Booking::where('room_id', $request->room_id)
             ->where('starts_at', '<=', $request->ends_at)
@@ -42,8 +42,7 @@ class BookingController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        Log::withContext(['booking_id' => $booking->id]);
-        Log::channel('bookings')->info('Booking created');
+        Log::channel('bookings')->info('Booking created', ['booking_id' => $booking->id]);
 
         return $booking;
     }
