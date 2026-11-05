@@ -20,10 +20,10 @@ class BookingController extends Controller
 
     public function store(Request $request)
     {
-        $conflict = DB::select("SELECT id FROM bookings
-            WHERE room_id = {$request->room_id}
-            AND starts_at <= '{$request->ends_at}'
-            AND ends_at >= '{$request->starts_at}'");
+        $conflict = Booking::where('room_id', $request->room_id)
+            ->where('starts_at', '<=', $request->ends_at)
+            ->where('ends_at', '>=', $request->starts_at)
+            ->exists();
 
         if ($conflict) {
             return response()->json(['error' => 'Комната занята'], 409);
@@ -34,7 +34,13 @@ class BookingController extends Controller
             return response()->json(['error' => 'Нерабочее время'], 422);
         }
 
-        $booking = Booking::create($request->all());
+        $booking = Booking::create([
+            'room_id' => $request->room_id,
+            'starts_at' => $request->starts_at,
+            'ends_at' => $request->ends_at,
+            'title' => $request->title,
+            'user_id' => $request->user()->id,
+        ]);
 
         Log::withContext(['booking_id' => $booking->id]);
         Log::channel('bookings')->info('Booking created');
@@ -42,11 +48,16 @@ class BookingController extends Controller
         return $booking;
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        Booking::findOrFail($id)->delete();
+        $booking = Booking::findOrFail($id);
 
-        return response()->noContent();
+        // Отменить бронь может только тот пользователь, который ее создал
+        if ($booking->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $booking->delete();
     }
 
     public function today(Room $room)
