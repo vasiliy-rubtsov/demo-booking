@@ -14,6 +14,9 @@ class Booking extends Model
     /** @use HasFactory<BookingFactory> */
     use HasFactory;
 
+    public const BOOKING_STEP_MINUTES = 15; // Шаг времени бронирования, минут
+    public const BOOKING_MAX_MINUTES = 60 * 4; // Максимальное время бронирования, минут
+
     protected function casts(): array
     {
         return [
