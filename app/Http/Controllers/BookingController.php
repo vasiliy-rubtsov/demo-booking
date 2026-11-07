@@ -50,8 +50,13 @@ class BookingController extends Controller
         }
 
         // Проверяем, попадает ли заявленный интервал бронирования в рабочие часы офиса
-        if (!($startsAt >= $workTimeFrom && $startsAt < $workTimeTo)) {
+        if (!($startsAt >= $workTimeFrom && $startsAt < $workTimeTo && $endsAt <= $workTimeTo)) {
             return response()->json(['error' => 'Нерабочее время'], 422);
+        }
+
+        // Проверяем, не вышел ли заявленный интервал бронирования за пределы максимальной длительности
+        if ($startsAt->diffInMinutes($endsAt) > Booking::BOOKING_MAX_MINUTES) {
+            return response()->json(['error' => 'Превышено максимальное время бронирования'], 409);
         }
 
         $booking = Booking::create([
